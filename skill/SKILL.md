@@ -45,7 +45,8 @@ re-derive from the net diff.
 3. **Author `.slicelens/spec.json`** (schema below). For each candidate slice, verify it's
    a real net-diff component (present in the end state), assign its hunks, and place it in
    dependency order. Keep slices code-free: describe logic and system design, list file
-   paths as scope markers, never paste code.
+   paths as scope markers, never paste code. Write every section in plain English — see
+   **Voice** below; it's the default, not a polish pass.
 
 4. **Serve it — and attach YOUR callback (find your own tmux pane).** slicelens delivers
    annotations to a pane via `send-keys`; the callback is persisted per-instance in
@@ -115,6 +116,31 @@ re-derive from the net diff.
 
 Section strings render as inline HTML (local, trusted): use `<b>`, `<i>`,
 `<span class="mono">…</span>`, `<ul><li>…`. `b.g` = green, `b.w` = amber.
+
+## Voice — write slices to be digestible
+
+The reader is a human reviewing a plan, not someone reading the code. Every section must
+answer **what changed and why it matters** in plain English. This is the default and it is
+not optional.
+
+- **Lead with the human purpose, not the symbol name.** Write "Read what the user actually
+  sees — strip the HTML tags down to the plain on-screen text" — not "`visibleText` —
+  DOMParser `textContent` of a serialized fragment." Put the function/file name in parens
+  or `mono` as a secondary pointer for the implementer, never as the explanation itself.
+- **Keep a technical term only when it earns its place** — when the precise word is clearer
+  than a paraphrase and a reviewer needs it: DOM, alignment, selection (collapsed /
+  zero-width), clipboard, fingerprint, block, HTML. Use them plainly, in context.
+- **Cut jargon that doesn't add understanding.** No raw codepoints (`U+200B` → "invisible
+  zero-width characters"), no greek-letter deltas (`Δold→Δnew` → "just the part that
+  changed"), no internal coordinate-space talk, no leading with private helper names.
+- **Say why it's relevant.** A slice that lists what changed but not why the feature needs
+  it has failed. Tie each piece to the user-visible behavior it serves.
+- **Titles are plain and action-first** — "Find, preview, and paste the edit", "Turn the
+  feature on" — not "Resolve/apply pipeline orchestration".
+- Same voice for the `excluded` notes: plain reason it isn't a slice.
+
+Litmus test: a reviewer who has never seen this code should understand what each slice does
+and why, without looking anything up.
 
 ## CLI reference
 

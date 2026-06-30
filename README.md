@@ -22,6 +22,12 @@ relabelled, and work gets added then removed. slicelens ignores history and slic
 the whole diff and each of which compiles on top of the last. The viewer makes that stack
 legible; the annotation loop makes revising it fast.
 
+Slices are written in **plain English** — each one says what changed and why it matters,
+for a human reviewing a plan. Technical terms are kept only where they earn their place
+(DOM, alignment, selection, clipboard, fingerprint); the implementer's symbol names ride
+along in parentheses, never as the explanation. The skill enforces this voice (see
+`skill/SKILL.md` → Voice).
+
 ## Install
 
 ```bash
