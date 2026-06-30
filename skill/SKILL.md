@@ -47,17 +47,20 @@ re-derive from the net diff.
    dependency order. Keep slices code-free: describe logic and system design, list file
    paths as scope markers, never paste code.
 
-4. **Serve it — and set up YOUR callback.** slicelens never guesses who to ping; you
-   tell it, and it persists the callback in this instance's `.slicelens/runtime.json`.
-   Pick the form that reaches *you*:
-   - **Interactive Claude Code in tmux** (the common case): your Bash inherits
-     `$TMUX_PANE`. Run `slicelens serve --pane "$TMUX_PANE"` (or just `slicelens serve`
-     — it auto-detects `$TMUX_PANE`). Send then types the nudge into your pane.
-   - **You are NOT in a tmux pane** (background/headless session, or `$TMUX_PANE` is
-     empty): you can't be reached by send-keys. Either (a) pass
-     `--callback-cmd '<shell that pings you>'` if you have one, or (b) serve with no
-     callback and **poll** `.slicelens/outbox/latest.md` yourself — e.g. schedule a
-     wake-up, or check it when the user nudges you. Tell the user which you chose.
+4. **Serve it — and attach YOUR callback (find your own tmux pane).** slicelens delivers
+   annotations to a pane via `send-keys`; the callback is persisted per-instance in
+   `.slicelens/runtime.json`. `slicelens serve` self-detects the pane in this order:
+   `--pane` → `$TMUX_PANE` (interactive agents inherit it) → controlling-tty match against
+   `#{pane_tty}`. For an ordinary interactive Claude Code session in tmux, just run
+   `slicelens serve` and it finds your pane.
+
+   If serve prints "no callback set", you're a **detached/background** session: there is no
+   inherited `$TMUX_PANE` and your procs have no controlling tty, so a pane can't be
+   self-detected (and macOS blocks reading other procs' env to match a session id). In that
+   case **ask the user which tmux pane they're in** and pass it — `--pane` accepts a pane id
+   (`%32`) or a human ref (`session:window.pane`, e.g. `andy-agentic:2.0`). Verify with a
+   non-submitting marker before relying on it: `tmux send-keys -t <pane> -l '[ping]'` (no
+   Enter) and have them confirm it appears in their input.
 
    Run serve in the background; print the URL the CLI shows.
 
