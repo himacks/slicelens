@@ -1,7 +1,9 @@
 // Annotation persistence. Records live in .slicelens/annotations.json and progress
-// open → sent → resolved. Each annotation is a screenshot (PNG on disk) + commentary.
-// They persist (stay visible in the viewer) until the agent marks them resolved.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// open → sent → (removed). Each annotation is a screenshot (PNG on disk) + commentary.
+// They persist (stay visible in the viewer) until the agent has RESPONDED, at which
+// point `resolve` removes the record and its screenshot entirely — annotations are a
+// live worklist, not a log, so a handled one disappears.
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const IMAGE_DIR = "/tmp/slicelens";
@@ -56,8 +58,21 @@ export function addAnnotation(paths, input) {
     return annotation;
 }
 
+// Delete the on-disk screenshot for an annotation (best-effort).
+function removeImage(annotation) {
+    if (annotation?.image && existsSync(annotation.image)) {
+        try {
+            rmSync(annotation.image);
+        } catch {
+            /* best-effort cleanup */
+        }
+    }
+}
+
 export function deleteAnnotation(paths, id) {
     const data = readAnnotations(paths);
+    const gone = data.annotations.find(a => a.id === id);
+    if (gone) removeImage(gone);
     data.annotations = data.annotations.filter(a => a.id !== id);
     writeAnnotations(paths, data);
 }
@@ -76,19 +91,14 @@ export function markSent(paths, ids) {
     return data.annotations.filter(a => idSet.has(a.id));
 }
 
+// Responded → removed. Drop the matching annotations and their screenshots entirely.
 export function resolveAnnotations(paths, { ids, allSent }) {
     const data = readAnnotations(paths);
     const idSet = new Set(ids ?? []);
-    const now = new Date().toISOString();
-    let count = 0;
-    for (const a of data.annotations) {
-        const hit = allSent ? a.status === "sent" : idSet.has(a.id);
-        if (hit && a.status !== "resolved") {
-            a.status = "resolved";
-            a.resolvedAt = now;
-            count += 1;
-        }
-    }
+    const removed = data.annotations.filter(a => (allSent ? a.status === "sent" : idSet.has(a.id)));
+    for (const a of removed) removeImage(a);
+    const removedIds = new Set(removed.map(a => a.id));
+    data.annotations = data.annotations.filter(a => !removedIds.has(a.id));
     writeAnnotations(paths, data);
-    return count;
+    return removed.length;
 }

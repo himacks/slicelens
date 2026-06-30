@@ -62,7 +62,9 @@ export interface Spec {
 // An annotation is a screenshot of a dragged box on the spec + a line of commentary.
 // `rect` is in document coordinates so the marker can be redrawn over the page; `image`
 // is the on-disk PNG path the agent reads.
-export type AnnotationStatus = "open" | "sent" | "resolved";
+// open = drafted, not yet delivered · sent = delivered to the agent.
+// A handled annotation is removed outright (record + screenshot), never tombstoned.
+export type AnnotationStatus = "open" | "sent";
 
 export interface AnnotationRect {
     x: number;
@@ -80,5 +82,4 @@ export interface Annotation {
     status: AnnotationStatus;
     createdAt: string;
     sentAt?: string;
-    resolvedAt?: string;
 }

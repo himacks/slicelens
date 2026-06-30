@@ -3,7 +3,7 @@ import type { Annotation } from "../lib/types";
 import { useReview } from "./AnnotationProvider";
 
 export function Sidebar() {
-    const { annotations, resolvedCount, meta, send, remove } = useReview();
+    const { annotations, meta, send, remove } = useReview();
     const [note, setNote] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
@@ -29,7 +29,7 @@ export function Sidebar() {
             <div className="head">
                 <h4>Annotations</h4>
                 <div className="meta">
-                    {annotations.length} active · {resolvedCount} resolved
+                    {annotations.length} active
                     <span className={`pane-badge ${meta?.callbackLive ? "live" : "dead"}`} style={{ marginLeft: 8 }}>
                         {meta ? meta.callback : "…"}
                     </span>

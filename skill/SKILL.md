@@ -62,14 +62,17 @@ re-derive from the net diff.
    Run serve in the background; print the URL the CLI shows.
 
 5. **Iterate.** When the user annotates and hits Send, you get a one-line nudge in this
-   pane. Then:
+   pane. Then, for the batch:
    - Read `.slicelens/outbox/latest.md` — each annotation is a screenshot path + a note.
    - **Read each screenshot path** (the Read tool renders the PNG) to see the region.
    - For notes about the spec/slicing → edit `.slicelens/spec.json` (the viewer hot-reloads).
    - For notes about the underlying code/architecture → discuss with the user here, change
      code as agreed.
-   - When an item is handled, clear it: `slicelens resolve <id...>` (or `--all-sent`). The
-     viewer drops it from the active list. Annotations persist until you resolve them.
+   - **REQUIRED: the moment you have responded to an annotation, remove it** —
+     `slicelens resolve <id>`. This deletes the record and its screenshot; the viewer drops
+     it instantly. Annotations are a live worklist, not a log: a responded-to annotation
+     must not linger. Resolve each as you finish it (don't batch the removals to the end),
+     so the board always shows exactly what's still outstanding.
 
 ## spec.json schema
 

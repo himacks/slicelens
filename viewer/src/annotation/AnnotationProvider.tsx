@@ -12,8 +12,7 @@ import type { Annotation, AnnotationRect, Spec } from "../lib/types";
 interface ReviewContextValue {
     spec: Spec | null;
     error: string | null;
-    annotations: Annotation[]; // active (open + sent)
-    resolvedCount: number;
+    annotations: Annotation[]; // the live worklist (open + sent); handled ones are removed
     meta: api.Meta | null;
     mode: boolean;
     setMode: (on: boolean) => void;
@@ -93,12 +92,9 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
         [refetch]
     );
 
-    const annotations = all.filter(a => a.status !== "resolved");
-    const resolvedCount = all.length - annotations.length;
-
     return (
         <ReviewContext.Provider
-            value={{ spec, error, annotations, resolvedCount, meta, mode, setMode, refetch, create, send, remove }}
+            value={{ spec, error, annotations: all, meta, mode, setMode, refetch, create, send, remove }}
         >
             {children}
         </ReviewContext.Provider>

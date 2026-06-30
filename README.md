@@ -49,7 +49,9 @@ slice spec from the net diff (not the history), and boots the viewer.
 In the viewer: toggle **Annotate**, drag a box over any part of the spec to screenshot it,
 type a note, and **Send** (one or a batch). Each annotation arrives in your Claude Code
 pane as `screenshot path + note`; the agent reads the shot, acts, and runs
-`slicelens resolve <id>` to clear it. Annotations persist until resolved.
+`slicelens resolve <id>` — which **removes** the annotation and its screenshot outright.
+Annotations are a live worklist (`open → sent → removed`): a responded-to one disappears,
+so the board always shows exactly what's still outstanding.
 
 ## Layout
 
