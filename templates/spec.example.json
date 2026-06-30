@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "repo": "andy-agentic-edits",
+    "base": "main",
+    "branch": "codex/edit-mode",
+    "generatedAt": "2026-06-30",
+    "stats": { "files": 49, "additions": 3077, "deletions": 1347 },
+    "title": "ENG-4238 — Agentic editing, sliced from the net diff",
+    "subtitle": "Partitioning main → codex/edit-mode into a layerable PR stack.",
+    "intro": [
+      "<p>The branch hardens the <b>str_replace_editor</b> agentic-edit pipeline in <span class=\"mono\">lib/text-engine/</span>: how a staged edit is located in a live rich-text editor, highlighted for preview, and pasted over on accept — plus how editors are addressed, and the gate that turns it on.</p>",
+      "<p><b>Target:</b> a fresh <span class=\"mono\">ENG-4238</span> worktree. Apply the slices in order, each its own PR; build + test + review one, then add the next. Combined they equal the branch tip exactly.</p>"
+    ],
+    "principle": "The only input is the <b>final net diff</b> (<span class=\"mono\">git diff main..HEAD</span>). Every slice is a subset of that diff's hunks; the union of all slices <i>is</i> the diff. Slices are ordered so each compiles and tests green stacked on the previous. We do <b class=\"w\">not</b> reconstruct development history — work added and removed inside the branch never appears in the net diff, so it is not a slice."
+  },
+  "excluded": [
+    { "title": "transient resolve state", "reason": "added then deleted mid-branch. End-state <span class=\"mono\">UnresolvedReason = \"editor-gone\" | \"stale\" | \"no-seed\"</span>. No \"remove transient\" work exists to slice." },
+    { "title": "\"method A\" whole-document alignment / its removal", "reason": "the end state simply <i>is</i> windowed alignment with a cell-count cap as a backstop; both coexist in the final code. No net removal, so no \"precise-highlight fix\" slice." },
+    { "title": "reverse-highlight", "reason": "added then deleted. Nothing in the net diff." }
+  ],
+  "slices": [
+    {
+      "id": "s1", "number": "01",
+      "title": "Editor addressing by input fingerprint",
+      "kind": "foundation",
+      "dependsOn": [],
+      "unblocks": "every read / edit / resolve operation",
+      "sections": {
+        "net": "The in-memory editor registry (<span class=\"mono\">editable_node_index.ts</span> + its WeakRef <span class=\"mono\">e-N</span> map) is gone. Editors are addressed by an <span class=\"mono\">e-</span>-prefixed reference id from the existing FNV-hash family (siblings: <span class=\"mono\">l-</span> links, <span class=\"mono\">i-</span> inputs), resolved statelessly.",
+        "design": "Resolution reuses the form-fill path: <span class=\"mono\">resolveElementByFingerprint</span> runs a fresh input-discovery pass and calls <span class=\"mono\">findTargetCandidate</span>. Duplicate fingerprints are non-addressable (ambiguous → null). The tab resource surfaces each contenteditable as a <span class=\"mono\">[label][e-…]</span> marker.",
+        "layering": "The registry is consumed by <span class=\"mono\">resolve-edit</span> and <span class=\"mono\">read-editor</span>; deleting it forces the addressing swap at every site in one slice. Everything downstream resolves editors this way.",
+        "verify": "DOM discovery/resolution unit tests; resource-renderer snapshot tests for the <span class=\"mono\">[e-…]</span> markers; tool-contract tests. Feature still gated."
+      },
+      "files": [
+        { "path": "lib/dom/input_resolver.ts", "status": "modified" },
+        { "path": "lib/dom/editable_node_index.ts", "status": "deleted" },
+        { "path": "lib/api-contracts/src/browser-resources.ts", "status": "modified" },
+        { "path": "lib/shared/reference-link-id.ts", "status": "modified" },
+        { "path": "lib/tools/read-editor-rich-text/contract.ts", "status": "modified" },
+        { "path": "projects/cf-workers/resource-renderer/src/render.ts", "status": "modified" }
+      ]
+    },
+    {
+      "id": "s2", "number": "02",
+      "title": "Ancestor-scoped selection muting",
+      "kind": "foundation",
+      "dependsOn": [],
+      "unblocks": "flash-free live verification of later slices",
+      "sections": {
+        "net": "When the engine programmatically selects an editor to copy/read, the marker that suppresses the visible blue selection is placed on the editable's <b>ancestor</b> rather than the editable element itself.",
+        "design": "Editors like CKEditor rewrite attributes on their editable node, stripping a marker placed there. Marking one level up survives that rewrite, so the selection-suppression CSS keeps matching and the user sees no flash.",
+        "verify": "Unit test asserts the marker lands on the ancestor and survives a simulated editable rewrite. Live: read/highlight on CKEditor shows no blue flash."
+      },
+      "files": [
+        { "path": "lib/dom/programmatic-selection.ts", "status": "modified" },
+        { "path": "lib/dom/tests/programmatic-selection.test.ts", "status": "modified" }
+      ]
+    },
+    {
+      "id": "s3", "number": "03",
+      "title": "Display computation engine",
+      "kind": "modules",
+      "dependsOn": [],
+      "unblocks": "Slice 4",
+      "sections": {
+        "net": "Two new pure modules + tests: <span class=\"mono\">text-dom-utils.ts</span> (shared primitives) and <span class=\"mono\">source-mapped-display.ts</span> (projection engine). Exported and exposed on the devtools bundle. No live caller yet.",
+        "design": "<b>text-dom-utils</b>: visible-text extraction, zero-width stripping, change-core diffing, lane type, and <span class=\"mono\">changedVisibleSpan</span> (one function → both highlight and dim spans). <b>source-mapped-display</b>: plain-lane exact character-aligned projection; html-lane bounded-window alignment (±300 chars) with a cell-count cap backstop and code-unit offset indexing for astral chars.",
+        "layering": "New files compile with no consumer; the resolve pipeline (Slice 4) imports them. Landing the engine first keeps Slice 4 a focused wiring change.",
+        "verify": "Unit tests drive projection and span functions directly. Exercise live via the devtools bundle."
+      },
+      "files": [
+        { "path": "lib/text-engine/text-dom-utils.ts", "status": "added" },
+        { "path": "lib/text-engine/source-mapped-display.ts", "status": "added" },
+        { "path": "lib/text-engine/tests/resolve-edit-display.test.ts", "status": "modified", "note": "projection/span portion" },
+        { "path": "projects/chrome-extension/devtools/src/api.ts", "status": "modified" }
+      ]
+    },
+    {
+      "id": "s4", "number": "04",
+      "title": "Resolve / apply pipeline + workspace",
+      "kind": "orchestration",
+      "dependsOn": ["s1", "s3"],
+      "unblocks": "the preview/accept flow works end-to-end (still gated)",
+      "sections": {
+        "net": "<span class=\"mono\">resolve-edit.ts</span> is rewritten into the live locate/apply orchestration that consumes the engine, and <span class=\"mono\">ChatWorkspace.tsx</span> consumes its result. The fuzzy matcher (<span class=\"mono\">approx-string-match</span>) is deleted — resolve-edit was its last caller.",
+        "design": "<ul><li><b>Staleness rides the live DOM</b> (<span class=\"mono\">oldContentPresentInLiveDom</span>) — the clipboard can lag, the DOM can't.</li><li><b>Clipboard is subordinate</b>: fixes only the lane, feeds display, provides the apply splice target.</li><li><b>Locate</b> = anchor (walk up) then narrow (walk down) to the splice target.</li><li><b>Outcomes are total</b>: resolved, or one of three terminal reasons; apply reports retryable <span class=\"mono\">paste-failed</span> vs <span class=\"mono\">stale</span>.</li><li><b>One span</b> feeds page highlight + iframe dim.</li></ul>",
+        "layering": "The pipeline and its sole UI consumer are compile-coupled through <span class=\"mono\">ResolveResult</span>, so they land together. They require fingerprint addressing (1) and the engine (3).",
+        "verify": "Locate/apply tests over the public surface; a stale clipboard with old_content still in the DOM resolves rather than dismissing. Live: fast-cycle highlights, accept an edit."
+      },
+      "files": [
+        { "path": "lib/text-engine/resolve-edit.ts", "status": "modified", "note": "pipeline rewrite" },
+        { "path": "projects/chrome-extension/content-script/src/components/ChatWorkspace.tsx", "status": "modified" },
+        { "path": "lib/shared/approx-string-match.ts", "status": "deleted" }
+      ]
+    },
+    {
+      "id": "s5", "number": "05",
+      "title": "Dead-code & hygiene removals",
+      "kind": "subtraction",
+      "dependsOn": ["s3", "s4"],
+      "sections": {
+        "net": "Pure subtraction: <span class=\"mono\">word-diff</span> (already dead in main) and its test deleted; unused text-engine constants and selection helpers trimmed; the content-script narrows from a whole-barrel import to direct module imports.",
+        "design": "No behavior change. Genuinely-defensive guards and the retry/fallback paths from Slice 4 are kept.",
+        "verify": "Type-check + lint + both bundle builds stay green; consumer census confirms nothing removed still has a live reader."
+      },
+      "files": [
+        { "path": "lib/shared/word-diff.ts", "status": "deleted" },
+        { "path": "lib/text-engine/constants.ts", "status": "modified" },
+        { "path": "projects/chrome-extension/content-script/src/text-engine.ts", "status": "modified" }
+      ]
+    },
+    {
+      "id": "s6", "number": "06",
+      "title": "Activate edit mode",
+      "kind": "gate",
+      "dependsOn": ["s1", "s2", "s3", "s4", "s5"],
+      "unblocks": "the feature ships",
+      "sections": {
+        "net": "The <span class=\"mono\">read_editor_rich_text</span> and <span class=\"mono\">str_replace_editor</span> worker modules are registered in the default tool set, and the system prompt routes edits to them.",
+        "design": "Routing: revise existing text → read then str_replace with the <span class=\"mono\">e-</span> id; add new text → propose_insert; set discrete fields → propose_input_modification. Strictly last so the gate opens only once the logic beneath it is verified.",
+        "verify": "Chat-session tests assert the tools are advertised and the prompt routes correctly. Live end-to-end: ask the agent to revise existing editor text → a str_replace_editor card."
+      },
+      "files": [
+        { "path": "projects/cf-workers/chat-session/src/tool-runtime/default-worker-tool-modules.ts", "status": "modified" },
+        { "path": "projects/cf-workers/chat-session/src/config.ts", "status": "modified" }
+      ]
+    }
+  ]
+}

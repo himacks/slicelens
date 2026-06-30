@@ -1,0 +1,30 @@
+{
+  "name": "slicelens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Slice a branch's net diff into a layered, reviewable PR stack, render it in the browser, and wire in-browser annotations back to a Claude Code session.",
+  "bin": {
+    "slicelens": "bin/slicelens.mjs"
+  },
+  "scripts": {
+    "dev": "vite --config viewer/vite.config.mjs",
+    "build": "vite build --config viewer/vite.config.mjs",
+    "slicelens": "node bin/slicelens.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "html-to-image": "^1.11.13",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^6.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

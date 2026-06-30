@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+
+# Per-review working state. The spec is regenerated; annotations + outbox are
+# session-local. Keep the directory tracked (templates/) but ignore live runs.
+.slicelens/runtime.json
+.slicelens/spec.json
+.slicelens/diff.json
+.slicelens/annotations.json
+.slicelens/outbox/
