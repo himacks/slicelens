@@ -30,8 +30,55 @@ its base. Everything you produce is a partition of THAT diff:
   branch-internal work, it's a phantom: delete it.
 - Surface the churn you excluded in an `excluded` list so the reviewer sees you checked.
 
-A "remove X" or "fix Y" slice is almost always a sign you sliced the journey. Stop and
-re-derive from the net diff.
+A "fix Y" slice for a bug the branch itself introduced is a sign you sliced the journey.
+Stop and re-derive from the net diff.
+
+## Removals are slices too
+
+The net diff has two sides. Code that exists at base and is **gone at the end** is just as
+much a slice as new code — deletions and replacements of base machinery are first-class,
+reviewable changes ("main's content-fingerprint system goes away, replaced by X").
+
+Do NOT confuse the two kinds of "removed":
+- **Removed from base** (existed at base, absent at the end) → belongs in a slice, either
+  its own or explicitly named in the slice that replaces it. Never bury it in `excluded`.
+- **Added-then-removed inside the branch** (absent at base AND at the end) → not in the
+  net diff at all → `excluded`.
+
+`excluded` is ONLY for: (a) branch-internal churn (added and removed within the branch),
+(b) working-tree debug marked for stripping before commit, (c) files the user explicitly
+excluded. Everything else in the diff — additions AND deletions — must be mapped to a
+slice. The slice map must account for every hunk.
+
+## Granularity — a slice is one encapsulable piece of logic
+
+Each slice must be a self-contained review: a reader holds the whole thing in their head
+and says "okay, this makes sense" in one sitting. Not 100 confetti slices — but split
+whenever one slice bundles more than one mechanism.
+
+Signals a slice is too big (split it):
+- The design section needs multiple bold sub-headers or 5+ bullets covering different
+  mechanisms.
+- The file list spans 3+ unrelated areas of the tree (e.g. a DOM module + server
+  rendering + tool contracts).
+- You can't state its purpose in one sentence without "and".
+- Reviewing it requires understanding two new subsystems at once.
+
+Prefer: new module alone (no consumers yet) → its first consumer as the next slice →
+the surface/UI that exposes it as another. A pure-addition slice followed by a wiring
+slice is easier to review than one module-plus-wiring blob.
+
+## The end goal — slices are an implementation plan
+
+Once the spec is settled with the user, the slices get REBUILT on a fresh worktree/branch,
+in order: implement slice 1 perfectly and cleanly, verify it (build + tests + review),
+commit it, dump it from working memory, move to slice 2. The finished stack replaces the
+messy original branch with a hygienic, review-shaped history.
+
+Write every slice so it can be implemented without re-reading the others: name what it
+depends on, what it contains, and what "done" looks like (the verify section). If a slice
+can't be implemented standalone by someone holding only its card, it's underspecified or
+too entangled — fix the spec, not the implementer.
 
 ## Flow
 
@@ -150,6 +197,16 @@ and why, without looking anything up.
   `$SLICELENS_MESSAGE` (one-line nudge) and `$SLICELENS_OUTBOX` (briefing path).
 - `slicelens resolve <id...> | --all-sent` — mark annotations addressed
 - `slicelens status` — annotation counts
+
+## Learn from every round
+
+This skill is a living document. After each feedback round with the user, ask: does this
+feedback generalize beyond this one spec? If yes, fold it into this file (the skill lives
+in the slicelens repo, `skill/SKILL.md` — edit it there and commit) so the next invocation
+starts smarter. Lessons that have already been folded in this way: the plain-English
+voice, removals-are-slices, the granularity signals, resolve-means-remove, and the
+background-agent callback flow. Spec-specific feedback (this slice's wording, this
+diff's grouping) stays in the spec; only generalizable process lessons go here.
 
 ## Notes
 
