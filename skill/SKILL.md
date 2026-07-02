@@ -86,6 +86,24 @@ depends on, what it contains, and what "done" looks like (the verify section). I
 can't be implemented standalone by someone holding only its card, it's underspecified or
 too entangled — fix the spec, not the implementer.
 
+### Tests are the load-bearing wall — and get an adversary
+
+The rebuild's standing rule is "trim and simplify aggressively as long as tests pass",
+which makes test quality the thing everything rests on. Two consequences:
+
+- **Audit coverage before the rebuild starts.** For each slice ask: if someone deleted
+  the guarding code, would a test fail? Slices whose behavior only ever passed by live
+  soak (failure paths: lagging clipboard, style-rewrite-on-paste, attribute churn) get
+  marked **test-first** in their verify section, and hostile behaviors get encoded as
+  reusable fixtures so live findings become repeatable regressions.
+- **Use an adversary tester.** Pair with a second agent (e.g. a Claude Code session in a
+  sibling tmux pane) whose sole role is to judge test quality adversarially at each solid
+  point: hunt change-detectors, name concrete trims that would pass green but break
+  behavior, verdict TRIM-SAFE / NOT TRIM-SAFE. Brief it with a role file (see
+  `/tmp/adversary-brief.md` pattern: severity-tagged findings to a review file, one-line
+  ping back to the implementer's pane via send-keys). Honest beats agreeable — a false
+  "solid" is the worst outcome. Don't move to the next slice on a NOT TRIM-SAFE verdict.
+
 ## Flow
 
 1. **Pick the base.** Default to the fork point: `git merge-base main HEAD`. If the user
