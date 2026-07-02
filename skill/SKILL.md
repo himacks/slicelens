@@ -68,6 +68,12 @@ Prefer: new module alone (no consumers yet) → its first consumer as the next s
 the surface/UI that exposes it as another. A pure-addition slice followed by a wiring
 slice is easier to review than one module-plus-wiring blob.
 
+No junk-drawer slices. "A bag of small helpers" is not one slice just because the helpers
+share a file — group them by the question they answer and give each theme its own slice
+(e.g. "make the two texts comparable" vs "reduce an edit to its core"). If the design
+section is a flat list of unrelated bullets, it's a drawer: split it by theme, and spend
+the space you gain elaborating each half's why.
+
 ## The end goal — slices are an implementation plan
 
 Once the spec is settled with the user, the slices get REBUILT on a fresh worktree/branch,
